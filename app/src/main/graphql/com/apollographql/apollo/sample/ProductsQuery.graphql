@@ -1,0 +1,17 @@
+query HelloQuery {
+  hello
+  getProducts {
+    ...ProductDetail
+  }
+}
+
+fragment ProductDetail on products {
+  name
+  category
+  price
+  vote {
+    star
+    men
+    women
+  }
+}
