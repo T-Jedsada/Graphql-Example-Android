@@ -3,18 +3,21 @@ package com.jedsada.example
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import com.apollographql.apollo.ApolloCall
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Response
-import com.apollographql.apollo.exception.ApolloException
+import com.apollographql.apollo.rx2.Rx2Apollo
 import com.apollographql.apollo.sample.HelloQuery
 import com.jedsada.graphql.example.R
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 
+
 class MainActivity : AppCompatActivity() {
 
-    private val BASE_URL = "http://192.168.2.39:3000/graphql"
+    private val BASE_URL = "http://192.168.2.34:3000/graphql"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,17 +36,12 @@ class MainActivity : AppCompatActivity() {
                 .build()
 
         val helloQuery = HelloQuery.builder().build()
+        val apolloPrefetch = apolloClient.query(helloQuery).watcher()
+        val observable: Observable<Response<HelloQuery.Data>> = Rx2Apollo.from(apolloPrefetch)
 
-        val githuntFeedCall = apolloClient.query(helloQuery)
-        githuntFeedCall.enqueue(object : ApolloCall.Callback<HelloQuery.Data>() {
-            override fun onResponse(response: Response<HelloQuery.Data>) {
-                Log.d("POND", response.data().toString())
-            }
-
-            override fun onFailure(e: ApolloException) {
-                Log.d("POND", e.message)
-            }
-
-        })
+        observable.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({ Log.d("POND", it.data().toString()) }
+                        , { Log.e("POND", it.message) })
     }
 }
